@@ -5,8 +5,8 @@ const readline = require("readline");
 const playerModule = (() => {
     // create players array
     const players = {
-        X: {token: "X", turn: true},
-        O: {token: "O", turn: false},
+        X: {token: " X ", turn: true},
+        O: {token: " O ", turn: false},
     };
 
     const currentTurn = players.X;
@@ -20,20 +20,26 @@ const playerModule = (() => {
     };
     // This just returns the currentTurn variable
     const getTurn = () => currentTurn;
-
+    const switchTurn = (currentTurn) => {
+        return currentTurn = currentTurn === players.X ? players.O : players.X;
+    };
+    
     return {
         getPlayerToken,
         getTurn,
+        switchTurn,
     };
 })();
 
 // Function to create cells containing object holding information about token
 const createCell = () => {
-    const token = null;
+    let token = null;
     const getToken = () => token;
+    const setToken = (player) => token = player;
     
     return {
         getToken,
+        setToken,
     };
 };
 
@@ -41,32 +47,51 @@ const createCell = () => {
 const generateBoard = () => {
     const gameboard = [];
     for (let i = 0; i < 3; i++) {
-        gameboard[i] = [];
+        gameboard[i] = [];  // Initialize each row
         for (let j = 0; j < 3; j++) {
-            gameboard[i][j] = createCell();
+            gameboard[i][j] = createCell();  // Fill each cell with a createCell() object
         }
     }
-    
-    return gameboard;
+    return gameboard;  // Return the 2D array
 };
 
 // Beacuse its the CLI version, we need to receive the input with readline
-const getMove = () => {
- const createRL = () => {
+function getMove(currentTurn, board, playTurn) {
+    // Create an interface for input/output
     const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout,
+        output: process.stdout
     });
 
-    rl.question("");
- };
+    // Ask a question
+    rl.question(`Player ${currentTurn.token} enter (e.g 0,1): `, (coords) => {
+        let [row, col] = coords.split(",").map(Number);
+        // place these coordinates on the board with the players token
+        board[row][col].setToken(currentTurn.token);
+        // Close the interface after the input is processed
+        rl.close();
+        playTurn();
+    });
+}
 
+// Function the update the board (render)
+const renderBoard = (board) => {
+    return board.map(row => 
+        row.map(cell => cell.getToken() || " . ").join(" ")
+    ).join("\n");
 };
-
 const gameController = () => {
     let movesLeft = 9;
-    while (movesLeft > 0 && !winner) {
-        //  switch turn between players
-
-    }
+    // generate the board
+    const board = generateBoard();
+    const playTurn = () => {
+        console.log(renderBoard(board));
+        movesLeft--;
+    };
+    getMove(playerModule.getTurn(), board, playTurn);
+    // switch turns
+    playerModule.switchTurn();
 };
+
+// Run the TicTacToe game
+gameController();
