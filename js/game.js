@@ -3,7 +3,6 @@ const readline = require("readline");
 
 // Create the players
 const playerModule = (() => {
-    // create players array
     const players = {
         X: {token: " X ", turn: true},
         O: {token: " O ", turn: false},
@@ -11,98 +10,134 @@ const playerModule = (() => {
 
     let currentTurn = players.X;
 
-    // Getter functions for getting the player and the player with current turn
     const getPlayerToken = (token) => {
-        if(token in players) {
+        if (token in players) {
             return players[token].token;
         } else 
             return `Error! Player ${token} doesn't exist.`;
     };
-    // This just returns the currentTurn variable
+
+    const getCurrentTurn = () => currentTurn;
     const getTurn = () => currentTurn;
+    
     const switchTurn = () => {
-        return currentTurn = currentTurn === players.X ? players.O : players.X;
+        currentTurn = currentTurn === players.X ? players.O : players.X;
     };
     
     return {
         getPlayerToken,
         getTurn,
         switchTurn,
+        getCurrentTurn,
     };
 })();
 
-// Function to create cells containing object holding information about token
+// Function to create cells holding token information
 const createCell = () => {
     let token = null;
     const getToken = () => token;
     const setToken = (player) => token = player;
     
-    return {
-        getToken,
-        setToken,
-    };
+    return { getToken, setToken };
 };
 
-// Generate the gameboard 3x3 and insert cells 
+// Generate the gameboard 3x3 and insert cells
 const generateBoard = () => {
     const gameboard = [];
     for (let i = 0; i < 3; i++) {
-        gameboard[i] = [];  // Initialize each row
+        gameboard[i] = [];
         for (let j = 0; j < 3; j++) {
-            gameboard[i][j] = createCell();  // Fill each cell with a createCell() object
+            gameboard[i][j] = createCell();
         }
     }
-    return gameboard;  // Return the 2D array
+    return gameboard;
 };
 
-// Beacuse its the CLI version, we need to receive the input with readline
+// Get player move and update the board
 function getMove(currentTurn, board, playTurn) {
-    // Create an interface for input/output
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
 
-    // Ask a question
     rl.question(`Player ${currentTurn.token} enter (e.g 0,1): `, (coords) => {
         let [row, col] = coords.split(",").map(Number);
-        // place these coordinates on the board with the players token
+        // place these coordinates on the board with the player's token
         board[row][col].setToken(currentTurn.token);
-        // Close the interface after the input is processed
         rl.close();
-        playTurn();
+        playTurn(); // Call playTurn after the move is placed
     });
 }
 
-// Function the update the board (render)
+// Render the board to display
 const renderBoard = (board) => {
     return board.map(row => 
         row.map(cell => cell.getToken() || " . ").join(" ")
     ).join("\n");
 };
 
+// Check for winner
+function checkWinner(board) {
+    // Check all rows
+    for (let row = 0; row < 3; row++) {
+        if (board[row][0].getToken() && 
+            board[row][0].getToken() === board[row][1].getToken() &&
+            board[row][1].getToken() === board[row][2].getToken()) {
+            return board[row][0].getToken(); // Return the winning player
+        }
+    }
+
+    // Check all columns
+    for (let col = 0; col < 3; col++) {
+        if (board[0][col].getToken() && 
+            board[0][col].getToken() === board[1][col].getToken() &&
+            board[1][col].getToken() === board[2][col].getToken()) {
+            return board[0][col].getToken(); // Return the winning player
+        }
+    }
+
+    // Check diagonals
+    if (board[0][0].getToken() && 
+        board[0][0].getToken() === board[1][1].getToken() &&
+        board[1][1].getToken() === board[2][2].getToken()) {
+        return board[0][0].getToken(); // Diagonal check
+    }
+
+    if (board[0][2].getToken() && 
+        board[0][2].getToken() === board[1][1].getToken() &&
+        board[1][1].getToken() === board[2][0].getToken()) {
+        return board[0][2].getToken(); // Diagonal check
+    }
+
+    return null; // No winner found
+}
+
 // Main function controlling the game
 const gameController = () => {
     let movesLeft = 9;
     const board = generateBoard();
-    const playTurn = () => {
-        if (movesLeft === 0) {
-            console.log(`Game Over! Player ${playerModule.currentTurn.token} won!`);
-            return; // End of the game
-        } else {
-            console.log(renderBoard(board));
-            getMove(playerModule.getTurn(), board, () => {
-                movesLeft--;
-                playerModule.switchTurn();
-                playTurn();
-            });
-        }
-    };
     
-    getMove(playerModule.getTurn(), board, playTurn);
-    // switch turns
-    playerModule.switchTurn();
+    const playTurn = () => {
+        console.log(renderBoard(board)); // Display board after each move
 
+        const winner = checkWinner(board);
+        if (winner) {
+            console.log(`Player ${winner} wins!`);
+            return; // End the game if there's a winner
+        }
+
+        if (movesLeft === 0) {
+            console.log(`Game Over - it's a draw!`);
+            return; // End of game if no moves left
+        }
+
+        // Continue the game with the next move
+        movesLeft--;
+        playerModule.switchTurn(); // Switch turns
+        getMove(playerModule.getTurn(), board, playTurn); // Ask for the next move
+    };
+
+    playTurn(); // Start the first turn
 };
 
 // Run the TicTacToe game
