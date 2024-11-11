@@ -9,7 +9,7 @@ const playerModule = (() => {
         O: {token: " O ", turn: false},
     };
 
-    const currentTurn = players.X;
+    let currentTurn = players.X;
 
     // Getter functions for getting the player and the player with current turn
     const getPlayerToken = (token) => {
@@ -20,7 +20,7 @@ const playerModule = (() => {
     };
     // This just returns the currentTurn variable
     const getTurn = () => currentTurn;
-    const switchTurn = (currentTurn) => {
+    const switchTurn = () => {
         return currentTurn = currentTurn === players.X ? players.O : players.X;
     };
     
@@ -80,17 +80,29 @@ const renderBoard = (board) => {
         row.map(cell => cell.getToken() || " . ").join(" ")
     ).join("\n");
 };
+
+// Main function controlling the game
 const gameController = () => {
     let movesLeft = 9;
-    // generate the board
     const board = generateBoard();
     const playTurn = () => {
-        console.log(renderBoard(board));
-        movesLeft--;
+        if (movesLeft === 0) {
+            console.log(`Game Over! Player ${playerModule.currentTurn.token} won!`);
+            return; // End of the game
+        } else {
+            console.log(renderBoard(board));
+            getMove(playerModule.getTurn(), board, () => {
+                movesLeft--;
+                playerModule.switchTurn();
+                playTurn();
+            });
+        }
     };
+    
     getMove(playerModule.getTurn(), board, playTurn);
     // switch turns
     playerModule.switchTurn();
+
 };
 
 // Run the TicTacToe game
